@@ -2,7 +2,7 @@
 
 线性回归
 
-## 最小二乘法
+## 普通最小二乘法（Ordinary Least Squares, OLE)
 
 使用 $h\left(x\right)$ 作为预测值，假设线性函数定义如下：
 
@@ -16,7 +16,7 @@ h_\theta \left(x_{1},x_{2},\cdots x_{n}\right) &= \theta_{0} + \theta_{1}x_{1} +
 &=
 \left[
     \begin{matrix}
-    \theta_{0} & \theta_{1} & \theta_{2} & ... & \theta_{n}
+    \theta_{0} & \theta_{1} & \theta_{2} & \cdots & \theta_{n}
     \end{matrix}
 \right]
 \left[
@@ -24,7 +24,7 @@ h_\theta \left(x_{1},x_{2},\cdots x_{n}\right) &= \theta_{0} + \theta_{1}x_{1} +
     x_{0} \\
     x_{1} \\
     x_{2} \\
-    ... \\
+    \cdots \\
     x_{n}
     \end{matrix}
 \right]
@@ -33,7 +33,7 @@ h_\theta \left(x_{1},x_{2},\cdots x_{n}\right) &= \theta_{0} + \theta_{1}x_{1} +
 \end{aligned}
 $$
 
-其中 $\theta_{0}$ 是偏置，可以看成是 $\theta_{0}x_{0}$ ($x_{0} = 1$)。最终得到如下函数：
+其中 $\theta_{0}$ 是偏置项，可以看成是 $\theta_{0}x_{0}$ ($x_{0} = 1$)。最终得到如下函数：
 
 $$
 h_\theta \left(X\right) = \Theta^{T} X \tag {1}
@@ -49,14 +49,14 @@ $$
     \theta_{0} \\
     \theta_{1} \\
     \theta_{2} \\
-    ... \\
+    \cdots \\
     \theta_{n}
     \end{matrix}
 \right]
 =
 \left[
     \begin{matrix}
-    \theta_{0} & \theta_{1} & \theta_{2} & ... & \theta_{n}
+    \theta_{0} & \theta_{1} & \theta_{2} & \cdots & \theta_{n}
     \end{matrix}
 \right]^T
 \\
@@ -73,7 +73,7 @@ X &=
 =
 \left[
     \begin{matrix}
-    x_{0} & x_{1} & x_{2} & ... & x_{n}
+    x_{0} & x_{1} & x_{2} & \cdots & x_{n}
     \end{matrix}
 \right]^T
 \end{aligned}
@@ -189,3 +189,173 @@ $$
 $$
 
 到这里也就算出来了 $\Theta$ ，实现在代码中。
+
+* 优点：
+  - 不需要迭代，不需要学习率
+  - 可以得到全局最优解
+
+* 缺点：
+  - 需要计算 $\left(X^T X\right)^{-1}$ ，$X$ 必须是满秩矩阵，不是满秩就不能求逆，就无法使用了，可以采取一些方法来处理数据
+  - - 当样本数 $m$ 小于特征数目 $n$ 的时候，$\left(X^T X\right)^{-1}$ 不可逆，可以增加样本数量
+    - 存在一个特征与另一个特征线性相关或一个特征与若干个特征线性相关时，$\left(X^T X\right)^{-1}$ 也是不可逆的，筛选出线性无关的特征，不保留相同的特征，保证不存在线性相关的特征。
+    - 采用正则化的方法。对于正则化的方法，常见的是L1正则项和L2正则项。
+  - 当样本特征 $m$ 非常的大的时候，计算 $\left(X^T X\right)^{-1}$ 的逆矩阵非常耗时，时间复杂度 $O(n^3)$ ，小于 10000 是还可以接受
+  - 只适用于线性模型
+
+## 梯度下降 Radient Descent, RD)
+
+梯度下降算法比较多，这里简单的推理几个。
+
+先理解几个值：
+
+单个样本的误差为： $\vert h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \vert$
+
+单个样本的误差平方为：$\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right)^2$ ，我们使用平方是因为绝对值不好算。
+
+### 批量梯度下降（Batch Gradient Descent, BGD）
+
+批量梯度下降，它是指在每一次迭代时使用所有样本来进行梯度的更新。
+
+目标函数为：
+
+$$
+J\left(\theta_{0}, \theta_{1}, \theta_{2}, \cdots \theta_{n} \right) = {\frac {1} {2m}} \sum_{i=1}^{m} {\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right)^2}
+$$
+
+其中 $h_\theta \left( x^{\left(i\right)} \right)$ 是预测值， $y^{\left(i\right)}$ 是真实值， $\sum_{i=1}^{m}$ 表示计算每一个样本，$\theta_{0}, \theta_{1}, \theta_{2}, \cdots \theta_{n}$ 表示特征系数，这里的 $\frac {1} {m}$ 表示对所有的样本求平均(对于每一个特征$\theta_j$)， $\frac {1} {2}$ 是为了方便后面的计算，求导后约掉。
+
+那么我们的目标是：$\underset {\theta_{0}, \theta_{1}, \theta_{2}, \cdots \theta_{n}} {minimize} J\left( \theta_{0}, \theta_{1}, \theta_{2}, \cdots \theta_{n} \right)$ ，也就是选择 $\theta_{0}, \theta_{1}, \theta_{2}, \cdots \theta_{n}$ 使得 $J\left(\theta_{0}, \theta_{1}, \theta_{2}, \cdots \theta_{n} \right)$ 的值越小越好。然后代价函数对于每一个 $\theta_j$ (表示每一个特征) 求导：
+
+$$
+\begin{aligned}
+\frac {\Delta J\left(\theta_{0}, \theta_{1}, \theta_{2}, \cdots \theta_{n} \right)} {\Delta \theta_j}
+&= \frac {\Delta \left( {\frac {1} {2m}} \sum_{i=1}^{m} {\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right)^2} \right) } {\Delta \theta_j} \\
+&= {\frac {1} {m}} \sum_{i=1}^{m} {\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right) x_{j}^{\left(i\right)}}
+\end{aligned}
+$$
+
+每次迭代，对参数进行更新：
+
+$$
+\begin{aligned}
+\theta_j \coloneqq \theta_j - \alpha {\frac {1} {m}} \sum_{i=1}^{m} {\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right) x_{j}^{\left(i\right)}}
+\end{aligned}
+$$
+
+伪代码形式为：
+
+$$
+\begin{aligned}
+& repeat \{ \\ &
+& & \theta_j \coloneqq \theta_j - \alpha {\frac {1} {m}} \sum_{i=1}^{m} {\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right) x_{j}^{\left(i\right)}}  \;\;\;\; \left( for \;\; j = 0, 1, 2 \cdots n\right) \\
+&\} & \\
+\end{aligned}
+$$
+
+其中的 $\alpha$ 为学习率， $m$ 为样本个数， $i$ 为第$i$个样本， $n$ 为特征数，$j$ 为第 $j$ 个特征。
+
+* 优点
+  - 一次迭代是对所有样本进行计算，此时利用矩阵进行操作，实现了并行。
+  - 由全数据集确定的方向能够更好地代表样本总体，从而更准确地朝向极值所在的方向。当目标函数为凸函数时，BGD一定能够得到全局最优。
+* 缺点
+  - 当样本数 $m$ 很大时，每迭代一步都需要对所有样本计算，训练过程会很慢。
+
+### 随机梯度下降（Stochastic Gradient Descent, SGD）
+
+随机梯度下降法不同于批量梯度下降，随机梯度下降是每次迭代使用一个样本来对参数进行更新，使得训练速度加快。
+
+目标函数为：
+
+$$
+J^{\left(i\right)}\left(\theta_{0}, \theta_{1}, \theta_{2}, \cdots \theta_{n} \right) = {\frac {1} {2}} {\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right)^2}
+$$
+
+这里跟批量梯度下降差不多，只是不再使用所有的样本来计算并取平均值，而是采用 `1` 个，$\frac {1} {2}$ 是为了方便后面的计算，求导后约掉。对目标函数求导：
+
+$$
+\begin{aligned}
+\frac {\Delta J^{\left(i\right)}\left(\theta_{0}, \theta_{1}, \theta_{2}, \cdots \theta_{n} \right)} {\Delta \theta_j}
+&= \frac {\Delta \left( {\frac {1} {2}} {\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right)^2} \right) } {\Delta \theta_j} \\
+&= {\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right) x_{j}^{\left(i\right)}}
+\end{aligned}
+$$
+
+每次迭代，对参数进行更新：
+
+$$
+\theta_j \coloneqq \theta_j - \alpha {\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right) x_{j}^{\left(i\right)}}
+$$
+
+伪代码形式为（注意，这里不再有求和符号）：
+
+$$
+\begin{aligned}
+& repeat \{ & & \\
+& & for \;\;  & i = 1,2,3 \cdots m \;\; \{ \\
+& & & {\theta_j \coloneqq \theta_j - \alpha {\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right) x_{j}^{\left(i\right)}}  \;\;\;\; \left( for \;\; j = 0, 1, 2 \cdots n\right)} \\
+& & \} &\\
+& \} & & \\
+\end{aligned}
+$$
+
+其中的 $\alpha$ 为学习率， $m$ 为样本个数， $i$ 为第$i$个样本， $n$ 为特征数，$j$ 为第 $j$ 个特征。
+
+* 优点
+  - 由于不是在全部训练数据上的损失函数，而是在每轮迭代中，随机优化某一条训练数据上的损失函数，这样每一轮参数的更新速度大大加快。
+* 缺点
+  - 准确度下降。由于即使在目标函数为强凸函数的情况下，仍旧无法做到线性收敛。
+  - 可能会收敛到局部最优，由于单个样本并不能代表全体样本的趋势。
+
+### 小批量梯度下降（Mini-Batch Gradient Descent, MBGD）
+
+小批量梯度下降，是对批量梯度下降以及随机梯度下降的一个折中办法。其思想是：每次迭代 使用 `batch_size` 个样本来对参数进行更新。
+
+目标函数为：
+
+$$
+J^{\left(i\right)}\left(\theta_{0}, \theta_{1}, \theta_{2}, \cdots \theta_{n} \right) = {\frac {1} {2batch\_size}} \sum_{i=1}^{i+batch\_size-1} {\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right)^2}
+$$
+
+这里跟批量梯度下降差不多，只是不再使用所有的样本来计算并取平均值，而是采用 `batch_size` 个，$\frac {1} {2}$ 是为了方便后面的计算，求导后约掉。对目标函数求导：
+
+$$
+\begin{aligned}
+\frac {\Delta J^{\left(i\right)}\left(\theta_{0}, \theta_{1}, \theta_{2}, \cdots \theta_{n} \right)} {\Delta \theta_j}
+&= \frac {\Delta \left( {\frac {1} {2batch\_size}} \sum_{i=1}^{i+batch\_size-1} {\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right)^2} \right) } {\Delta \theta_j} \\
+&= \frac {1} {batch\_size} \sum_{i=1}^{i+batch\_size-1} {\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right) x_{j}^{\left(i\right)}}
+\end{aligned}
+$$
+
+每次迭代，对参数进行更新：
+
+$$
+\theta_j \coloneqq \theta_j - \alpha \frac {1} {batch\_size} \sum_{i=1}^{i+batch\_size-1} {\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right) x_{j}^{\left(i\right)}}
+$$
+
+伪代码形式为：
+
+$$
+\begin{aligned}
+& repeat \{ & & \\
+& & for \;\;  & i = 1 + batch\_size*0,1 + batch\_size*1,1 + batch\_size*2 \cdots m \;\; \{ \\
+& & & {\theta_j \coloneqq \theta_j - \alpha \frac {1} {batch\_size} \sum_{i=1}^{i+batch\_size-1} {\left( h_\theta \left( x^{\left(i\right)} \right) - y^{\left(i\right)} \right) x_{j}^{\left(i\right)}}  \;\;\;\; \left( for \;\; j = 0, 1, 2 \cdots n\right)} \\
+& & \} &\\
+& \} & & \\
+\end{aligned}
+$$
+
+其中的 $\alpha$ 为学习率， $m$ 为样本个数， $i$ 为第$i$个样本， $n$ 为特征数，$j$ 为第 $j$ 个特征。
+
+其实这个 `batch_size = 1` 就是随机梯度下降，`batch_size = m` 就是批量梯度下降。
+
+* 优点
+  - 通过矩阵运算，每次在一个batch上优化参数并不会比单个数据慢太多。
+  - 每次使用一个batch可以大大减小收敛所需要的迭代次数，同时可以使收敛到的结果更加接近梯度下降的效果。
+* 缺点
+  - batch_size的不当选择可能会带来一些问题。
+
+## 图
+
+代码中化的图如下：
+
+![训练](resources/figure.png)
